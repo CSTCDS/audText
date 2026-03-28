@@ -21,9 +21,9 @@ jobs:
       - name: 📤 Upload via FTP audText
         uses: SamKirkland/FTP-Deploy-Action@v4.3.6
         with:
-          server: ${{ secrets.FTP_SERVER }}
-          username: ${{ secrets.FTP_USERNAME }}
-          password: ${{ secrets.FTP_PASSWORD }}
+          server: ${{ secrets.FTP_SERVER_NAME }}
+          username: ${{ secrets.FTP_USER }}
+          password: ${{ secrets.FTP_PWD }}
           local-dir: ./  # Répertoire local à envoyer
           server-dir: audText/
           log-level: standard
