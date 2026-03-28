@@ -22,7 +22,7 @@ jobs:
         uses: SamKirkland/FTP-Deploy-Action@v4.3.6
         with:
           server: ${{ secrets.FTP_SERVER_NAME }}
-          username: ${{ secrets.FTP_USER }}
+          username: ${{ secrets.FTP_ID }}
           password: ${{ secrets.FTP_PWD }}
           local-dir: ./  # Répertoire local à envoyer
           server-dir: audText/
