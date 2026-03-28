@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>audioTexte - PWA</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main>
+    <h1>audioTexte</h1>
+    <div class="buttons">
+      <button data-sound="applaudissements.mp3">Applaudissements</button>
+      <button data-sound="fortboyardtheme.mp3">Fort Boyard</button>
+    </div>
+    <p class="note">Ajoutez vos fichiers MP3 dans <code>/assets/sound/</code>.</p>
+  </main>
+
+  <script src="app.js"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('service-worker.js').catch(e => console.log('SW registration failed', e));
+    }
+  </script>
+</body>
+</html>
