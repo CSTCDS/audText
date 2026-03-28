@@ -1,0 +1,29 @@
+name: Deploy to FTP audText
+
+on:
+  push:
+    branches:
+      - main   # Déploie à chaque push sur la branche main
+
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  ftp-deploy:
+    name: 🟦 Deploy to FTP audText Server
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 🔍 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 📤 Upload via FTP audText
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.6
+        with:
+          server: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          local-dir: ./  # Répertoire local à envoyer
+          server-dir: audText/
+          log-level: standard
