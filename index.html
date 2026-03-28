@@ -9,12 +9,21 @@
 </head>
 <body>
   <main>
-    <h1>audioTexte</h1>
-    <div class="buttons">
-      <button data-sound="applaudissements.mp3">Applaudissements</button>
-      <button data-sound="fortboyardtheme.mp3">Fort Boyard</button>
-    </div>
-    <p class="note">Ajoutez vos fichiers MP3 dans <code>/assets/sound/</code>.</p>
+    <header>
+      <h1>audioTexte</h1>
+    </header>
+
+    <section id="top">
+      <div id="text-area" class="text-area">Chargement du texte...</div>
+    </section>
+
+    <section id="buttons-area">
+      <div class="buttons-grid">
+        <button class="sound-btn" data-sound="applaudissements.mp3">Applaudissements</button>
+        <button class="sound-btn" data-sound="fortboyardtheme.mp3">Fort Boyard</button>
+      </div>
+      <p class="note">Ajoutez vos fichiers MP3 dans <code>/assets/sound/</code>.</p>
+    </section>
   </main>
 
   <script src="app.js"></script>
