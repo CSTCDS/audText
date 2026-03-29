@@ -1,13 +1,38 @@
 const soundPath = 'assets/sound/';
 const audioCache = new Map();
 const btnMap = new Map();
+let audioCtx = null;
+
+function ensureAudioContext(){
+  if (!audioCtx){
+    try{ audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }catch(e){ audioCtx = null; }
+  }
+}
 
 function getAudio(filename){
+  // returns an object {el, gain, srcNode}
   if (audioCache.has(filename)) return audioCache.get(filename);
-  const a = new Audio(soundPath + filename);
-  a.preload = 'auto';
-  audioCache.set(filename, a);
-  return a;
+  const el = new Audio(soundPath + filename);
+  el.preload = 'auto';
+  let obj = { el, gain: null, src: null };
+  // create AudioContext lazily on first user gesture
+  try{
+    ensureAudioContext();
+    if (audioCtx){
+      // Create a MediaElementSource and GainNode when audio context is available
+      const src = audioCtx.createMediaElementSource(el);
+      const gain = audioCtx.createGain();
+      gain.gain.value = 1;
+      src.connect(gain);
+      gain.connect(audioCtx.destination);
+      obj.gain = gain;
+      obj.src = src;
+    }
+  }catch(e){
+    // ignore; fallback to element-only playback
+  }
+  audioCache.set(filename, obj);
+  return obj;
 }
 
 function toggleAudioForButton(btn){
@@ -31,34 +56,74 @@ function toggleAudioForButton(btn){
 // - click on stopped button -> start playback immediately
 // - click on playing button -> fade out and stop over 3s
 // - dblclick on playing button -> stop immediately
-function fadeOutAndStop(audio, btn, duration = 3000){
-  if (!audio) return;
-  if (audio._fadeInterval) return; // already fading
-  const startVol = (typeof audio.volume === 'number') ? audio.volume : 1;
+function fadeOutAndStop(audioObj, btn, duration = 3000){
+  if (!audioObj) return;
+  const el = audioObj.el;
+  // If we have a gain node, use it for smooth precise fading
+  if (audioObj.gain && audioCtx){
+    try{
+      const now = audioCtx.currentTime;
+      const gain = audioObj.gain.gain;
+      gain.cancelScheduledValues(now);
+      const current = gain.value;
+      gain.setValueAtTime(current, now);
+      gain.linearRampToValueAtTime(0, now + duration/1000);
+      // schedule pause and reset after duration
+      if (audioObj._fadeTimeout) clearTimeout(audioObj._fadeTimeout);
+      audioObj._fadeTimeout = setTimeout(()=>{
+        try{ el.pause(); }catch(e){}
+        try{ el.currentTime = 0; }catch(e){}
+        gain.cancelScheduledValues(audioCtx.currentTime);
+        gain.setValueAtTime(1, audioCtx.currentTime);
+        if (btn) btn.classList.remove('playing');
+        delete audioObj._fadeTimeout;
+      }, duration);
+    }catch(e){
+      // fallback to element fade if something fails
+      fallbackElementFade(el, btn, duration);
+    }
+  } else {
+    // fallback: element volume manipulation
+    fallbackElementFade(el, btn, duration);
+  }
+}
+
+function fallbackElementFade(el, btn, duration){
+  if (!el) return;
+  if (el._fadeInterval) return;
+  const startVol = (typeof el.volume === 'number') ? el.volume : 1;
   const stepMs = 50;
   const steps = Math.max(1, Math.ceil(duration / stepMs));
   let step = 0;
-  audio._fadeInterval = setInterval(()=>{
+  el._fadeInterval = setInterval(()=>{
     step++;
     const v = startVol * Math.max(0, 1 - step / steps);
-    audio.volume = v;
+    try{ el.volume = v; }catch(e){}
     if (step >= steps){
-      clearInterval(audio._fadeInterval);
-      delete audio._fadeInterval;
-      try{ audio.pause(); }catch(e){}
-      try{ audio.currentTime = 0; }catch(e){}
-      audio.volume = startVol;
+      clearInterval(el._fadeInterval);
+      delete el._fadeInterval;
+      try{ el.pause(); }catch(e){}
+      try{ el.currentTime = 0; }catch(e){}
+      try{ el.volume = startVol; }catch(e){}
       if (btn) btn.classList.remove('playing');
     }
   }, stepMs);
 }
 
-function stopImmediately(audio, btn){
-  if (!audio) return;
-  if (audio._fadeInterval){ clearInterval(audio._fadeInterval); delete audio._fadeInterval; }
-  try{ audio.pause(); }catch(e){}
-  try{ audio.currentTime = 0; }catch(e){}
-  audio.volume = 1;
+function stopImmediately(audioObj, btn){
+  if (!audioObj) return;
+  const el = audioObj.el;
+  if (audioObj._fadeTimeout){ clearTimeout(audioObj._fadeTimeout); delete audioObj._fadeTimeout; }
+  if (audioObj.gain && audioCtx){
+    try{
+      audioObj.gain.gain.cancelScheduledValues(audioCtx.currentTime);
+      audioObj.gain.gain.setValueAtTime(1, audioCtx.currentTime);
+    }catch(e){}
+  }
+  if (el._fadeInterval){ clearInterval(el._fadeInterval); delete el._fadeInterval; }
+  try{ el.pause(); }catch(e){}
+  try{ el.currentTime = 0; }catch(e){}
+  try{ el.volume = 1; }catch(e){}
   if (btn) btn.classList.remove('playing');
 }
 
@@ -68,18 +133,23 @@ document.addEventListener('click', (e) => {
   const file = btn.getAttribute('data-sound');
   const audio = getAudio(file);
   if (!audio) return;
-  if (audio.paused){
+  const audioObj = getAudio(file);
+  const audioEl = audioObj.el;
+  // ensure AudioContext resumed on first user gesture
+  if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume().catch(()=>{});
+  if (audioEl.paused){
     // start immediately
-    if (audio._fadeInterval){ clearInterval(audio._fadeInterval); delete audio._fadeInterval; }
-    audio.currentTime = 0;
-    audio.volume = 1;
-    audio.play().then(()=>{
+    if (audioEl._fadeInterval){ clearInterval(audioEl._fadeInterval); delete audioEl._fadeInterval; }
+    if (audioObj._fadeTimeout){ clearTimeout(audioObj._fadeTimeout); delete audioObj._fadeTimeout; }
+    audioEl.currentTime = 0;
+    try{ audioEl.volume = 1; }catch(e){}
+    audioEl.play().then(()=>{
       btn.classList.add('playing');
     }).catch(err => console.log('Play failed:', err));
-    audio.onended = () => btn.classList.remove('playing');
+    audioEl.onended = () => btn.classList.remove('playing');
   } else {
-    // playing -> fade out over 3s
-    fadeOutAndStop(audio, btn, 3000);
+    // playing -> fade out over 3s using GainNode when available
+    fadeOutAndStop(audioObj, btn, 3000);
   }
 });
 
