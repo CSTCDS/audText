@@ -137,30 +137,42 @@ function arrangeButtons(buttons){
   const GAP = 12; // matches CSS gap
   // clear container
   container.innerHTML = '';
-  // group into rows up to 3
-  for (let i=0;i<buttons.length;i+=3){
-    const rowBtns = buttons.slice(i,i+3);
+  if (!buttons || buttons.length===0) return;
+  // compute number of rows
+  const numRows = Math.ceil(buttons.length / 3);
+  // prepare empty rows (top-to-bottom)
+  const rows = new Array(numRows).fill(0).map(()=>[]);
+  // fill rows starting from bottom to top
+  let idx = 0;
+  for (let r = numRows - 1; r >= 0; r--) {
+    for (let c = 0; c < 3 && idx < buttons.length; c++){
+      rows[r].push(buttons[idx++]);
+    }
+  }
+
+  // append rows top-to-bottom
+  for (let ri = 0; ri < rows.length; ri++){
+    const rowBtns = rows[ri];
     const row = document.createElement('div');
     row.className = 'btn-row';
-    // append buttons to row
-    rowBtns.forEach(b=> row.appendChild(b));
+    rowBtns.forEach(b => row.appendChild(b));
     container.appendChild(row);
-    // set heights: first row 250px, others 150px
-    const h = (i===0)?250:150;
-    // compute width per button: available container width minus gaps
+    // determine height: bottom row = last index
+    const isBottom = (ri === rows.length - 1);
+    const h = isBottom ? 250 : 150;
+    // compute width per button for this row
     const containerWidth = Math.min(container.clientWidth || window.innerWidth, 1200);
-    const count = rowBtns.length;
+    const count = rowBtns.length || 1;
     const totalGap = GAP * (count - 1);
     let btnWidth = Math.floor((containerWidth - totalGap) / count);
-    // cap width to reasonable max
-    const maxWidth = (i===0)?250:250;
-    if (btnWidth > maxWidth) btnWidth = maxWidth;
-    // responsive reduction for small screens
+    // cap width to reasonable max depending on responsive breakpoints
+    const maxWidthDefault = isBottom ? 250 : 250;
+    if (btnWidth > maxWidthDefault) btnWidth = maxWidthDefault;
     if (window.innerWidth < 420) {
-      const smallMax = (i===0)?160:160;
+      const smallMax = isBottom ? 160 : 160;
       if (btnWidth > smallMax) btnWidth = smallMax;
     } else if (window.innerWidth < 820) {
-      const medMax = (i===0)?200:200;
+      const medMax = isBottom ? 200 : 200;
       if (btnWidth > medMax) btnWidth = medMax;
     }
     // apply styles
