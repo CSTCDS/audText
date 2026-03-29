@@ -97,8 +97,8 @@ document.addEventListener('keydown', (e)=>{
   if (e.key === 'ArrowRight') showNext();
 });
 
-// dynamic building of sound buttons
-const soundListUrl = 'assets/sound/list.json';
+// dynamic building of sound buttons via API endpoints
+const soundListUrl = '/api/sounds';
 let soundFiles = [];
 let currentButtons = [];
 
