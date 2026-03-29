@@ -97,16 +97,20 @@ document.addEventListener('keydown', (e)=>{
   if (e.key === 'ArrowRight') showNext();
 });
 
-// dynamic building of sound buttons via API endpoints
+// dynamic building of sound buttons: prefer server-injected `window.SOUND_LIST`, fallback to API
 const soundListUrl = '/api/sounds';
 let soundFiles = [];
 let currentButtons = [];
 
 async function loadSoundList(){
   try{
-    const res = await fetch(soundListUrl);
-    if (!res.ok) throw new Error('No sound list');
-    soundFiles = await res.json();
+    if (Array.isArray(window.SOUND_LIST) && window.SOUND_LIST.length>0){
+      soundFiles = window.SOUND_LIST.slice();
+    } else {
+      const res = await fetch(soundListUrl);
+      if (!res.ok) throw new Error('No sound list');
+      soundFiles = await res.json();
+    }
     if (!Array.isArray(soundFiles) || soundFiles.length===0){ soundFiles = []; console.log('No sounds'); return; }
     buildButtons(soundFiles);
   }catch(e){
@@ -171,5 +175,17 @@ function arrangeButtons(buttons){
 window.addEventListener('resize', () => arrangeButtons(currentButtons));
 document.addEventListener('DOMContentLoaded', () => arrangeButtons(currentButtons));
 
-// init: load sounds then texts
-loadSoundList().then(()=> loadTextList());
+// init: load sounds then texts; prefer server-injected TEXT_LIST in loadTextList
+async function init(){
+  await loadSoundList();
+  // if server injected TEXT_LIST, use it
+  if (Array.isArray(window.TEXT_LIST) && window.TEXT_LIST.length>0){
+    textFiles = window.TEXT_LIST.slice();
+    textIndex = 0;
+    await loadText(textIndex);
+  } else {
+    await loadTextList();
+  }
+}
+
+init();
