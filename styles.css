@@ -6,16 +6,15 @@ h1{margin:0;font-size:20px}
 #top{flex:1;overflow:auto;padding:16px}
 .text-area{background:#fff;padding:16px;border-radius:8px;border:1px solid #e6e6e6;min-height:150px}
 #buttons-area{padding:16px}
-.buttons-grid{display:grid;grid-template-columns:repeat(3,250px);grid-auto-rows:250px;gap:12px;justify-content:center}
-.sound-btn{width:250px;height:250px;padding:12px;font-size:16px;border-radius:12px;border:1px solid #ddd;background:#fff;display:flex;align-items:center;justify-content:center;text-align:center}
+.buttons-grid{display:flex;flex-direction:column;gap:12px;align-items:center}
+.btn-row{display:flex;gap:12px;justify-content:center;width:100%;}
+.sound-btn{padding:12px;font-size:16px;border-radius:12px;border:1px solid #ddd;background:#fff;display:flex;align-items:center;justify-content:center;text-align:center;box-sizing:border-box}
 .sound-btn.playing{background:#e8f5e9;border-color:#4caf50}
 .note{font-size:13px;color:#666;margin-top:8px;text-align:center}
 
 @media (max-width:820px){
-	.buttons-grid{grid-template-columns:repeat(2,200px);grid-auto-rows:200px}
-	.sound-btn{width:200px;height:200px}
+	.btn-row{gap:10px}
 }
 @media (max-width:420px){
-	.buttons-grid{grid-template-columns:repeat(1,160px);grid-auto-rows:160px}
-	.sound-btn{width:160px;height:160px}
+	.btn-row{gap:8px}
 }

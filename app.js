@@ -98,4 +98,50 @@ document.addEventListener('keydown', (e)=>{
 });
 
 // init
+// arrange buttons into rows of max 3, set widths/heights per row
+function arrangeButtons(){
+  const container = document.querySelector('.buttons-grid');
+  const buttons = Array.from(container.querySelectorAll('.sound-btn'));
+  const GAP = 12; // matches CSS gap
+  // clear container
+  container.innerHTML = '';
+  // group into rows up to 3
+  for (let i=0;i<buttons.length;i+=3){
+    const rowBtns = buttons.slice(i,i+3);
+    const row = document.createElement('div');
+    row.className = 'btn-row';
+    // append buttons to row
+    rowBtns.forEach(b=> row.appendChild(b));
+    container.appendChild(row);
+    // set heights: first row 250px, others 150px
+    const h = (i===0)?250:150;
+    // compute width per button: available container width minus gaps
+    // use clientWidth of container to compute pixel widths
+    const containerWidth = Math.min(container.clientWidth || window.innerWidth, 1200);
+    const count = rowBtns.length;
+    const totalGap = GAP * (count - 1);
+    let btnWidth = Math.floor((containerWidth - totalGap) / count);
+    // cap width to reasonable max
+    const maxWidth = (i===0)?250:250;
+    if (btnWidth > maxWidth) btnWidth = maxWidth;
+    // responsive reduction for small screens
+    if (window.innerWidth < 420) {
+      const smallMax = (i===0)?160:160;
+      if (btnWidth > smallMax) btnWidth = smallMax;
+    } else if (window.innerWidth < 820) {
+      const medMax = (i===0)?200:200;
+      if (btnWidth > medMax) btnWidth = medMax;
+    }
+    // apply styles
+    rowBtns.forEach(b=>{
+      b.style.width = btnWidth + 'px';
+      b.style.height = h + 'px';
+      b.style.flex = '0 0 ' + btnWidth + 'px';
+    });
+  }
+}
+
+window.addEventListener('resize', () => arrangeButtons());
+document.addEventListener('DOMContentLoaded', () => arrangeButtons());
+
 loadTextList();
