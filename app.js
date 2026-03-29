@@ -97,11 +97,39 @@ document.addEventListener('keydown', (e)=>{
   if (e.key === 'ArrowRight') showNext();
 });
 
-// init
+// dynamic building of sound buttons
+const soundListUrl = 'assets/sound/list.json';
+let soundFiles = [];
+let currentButtons = [];
+
+async function loadSoundList(){
+  try{
+    const res = await fetch(soundListUrl);
+    if (!res.ok) throw new Error('No sound list');
+    soundFiles = await res.json();
+    if (!Array.isArray(soundFiles) || soundFiles.length===0){ soundFiles = []; console.log('No sounds'); return; }
+    buildButtons(soundFiles);
+  }catch(e){
+    console.log('Pas de liste de sons:', e);
+  }
+}
+
+function buildButtons(list){
+  currentButtons = list.map(name => {
+    const b = document.createElement('button');
+    b.className = 'sound-btn';
+    b.setAttribute('data-sound', name);
+    // use a cleaned label from filename
+    const label = name.replace(/[-_]/g,' ').replace(/\.mp3$/i,'');
+    b.textContent = label;
+    return b;
+  });
+  arrangeButtons(currentButtons);
+}
+
 // arrange buttons into rows of max 3, set widths/heights per row
-function arrangeButtons(){
+function arrangeButtons(buttons){
   const container = document.querySelector('.buttons-grid');
-  const buttons = Array.from(container.querySelectorAll('.sound-btn'));
   const GAP = 12; // matches CSS gap
   // clear container
   container.innerHTML = '';
@@ -116,7 +144,6 @@ function arrangeButtons(){
     // set heights: first row 250px, others 150px
     const h = (i===0)?250:150;
     // compute width per button: available container width minus gaps
-    // use clientWidth of container to compute pixel widths
     const containerWidth = Math.min(container.clientWidth || window.innerWidth, 1200);
     const count = rowBtns.length;
     const totalGap = GAP * (count - 1);
@@ -141,7 +168,8 @@ function arrangeButtons(){
   }
 }
 
-window.addEventListener('resize', () => arrangeButtons());
-document.addEventListener('DOMContentLoaded', () => arrangeButtons());
+window.addEventListener('resize', () => arrangeButtons(currentButtons));
+document.addEventListener('DOMContentLoaded', () => arrangeButtons(currentButtons));
 
-loadTextList();
+// init: load sounds then texts
+loadSoundList().then(()=> loadTextList());
