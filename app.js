@@ -27,10 +27,69 @@ function toggleAudioForButton(btn){
   }
 }
 
+// Click/dblclick behavior:
+// - click on stopped button -> start playback immediately
+// - click on playing button -> fade out and stop over 3s
+// - dblclick on playing button -> stop immediately
+function fadeOutAndStop(audio, btn, duration = 3000){
+  if (!audio) return;
+  if (audio._fadeInterval) return; // already fading
+  const startVol = (typeof audio.volume === 'number') ? audio.volume : 1;
+  const stepMs = 50;
+  const steps = Math.max(1, Math.ceil(duration / stepMs));
+  let step = 0;
+  audio._fadeInterval = setInterval(()=>{
+    step++;
+    const v = startVol * Math.max(0, 1 - step / steps);
+    audio.volume = v;
+    if (step >= steps){
+      clearInterval(audio._fadeInterval);
+      delete audio._fadeInterval;
+      try{ audio.pause(); }catch(e){}
+      try{ audio.currentTime = 0; }catch(e){}
+      audio.volume = startVol;
+      if (btn) btn.classList.remove('playing');
+    }
+  }, stepMs);
+}
+
+function stopImmediately(audio, btn){
+  if (!audio) return;
+  if (audio._fadeInterval){ clearInterval(audio._fadeInterval); delete audio._fadeInterval; }
+  try{ audio.pause(); }catch(e){}
+  try{ audio.currentTime = 0; }catch(e){}
+  audio.volume = 1;
+  if (btn) btn.classList.remove('playing');
+}
+
 document.addEventListener('click', (e) => {
   const btn = e.target.closest('button.sound-btn');
   if (!btn) return;
-  toggleAudioForButton(btn);
+  const file = btn.getAttribute('data-sound');
+  const audio = getAudio(file);
+  if (!audio) return;
+  if (audio.paused){
+    // start immediately
+    if (audio._fadeInterval){ clearInterval(audio._fadeInterval); delete audio._fadeInterval; }
+    audio.currentTime = 0;
+    audio.volume = 1;
+    audio.play().then(()=>{
+      btn.classList.add('playing');
+    }).catch(err => console.log('Play failed:', err));
+    audio.onended = () => btn.classList.remove('playing');
+  } else {
+    // playing -> fade out over 3s
+    fadeOutAndStop(audio, btn, 3000);
+  }
+});
+
+document.addEventListener('dblclick', (e) => {
+  const btn = e.target.closest('button.sound-btn');
+  if (!btn) return;
+  const file = btn.getAttribute('data-sound');
+  const audio = getAudio(file);
+  if (!audio) return;
+  stopImmediately(audio, btn);
 });
 
 // Warm-up audio on first user gesture to satisfy autoplay restrictions
