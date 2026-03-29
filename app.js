@@ -253,11 +253,70 @@ function buildButtons(list){
     b.className = 'sound-btn';
     b.setAttribute('data-sound', name);
     // use a cleaned label from filename
-    const label = name.replace(/[-_]/g,' ').replace(/\.mp3$/i,'');
+    const nameNoExt = name.replace(/\.mp3$/i, '');
+    const label = smartSplit(nameNoExt);
     b.textContent = label;
     return b;
   });
   arrangeButtons(currentButtons);
+}
+
+// Heuristic word segmentation to split concatenated filenames into readable words
+function smartSplit(s){
+  // replace separators first
+  let base = s.replace(/[_-]+/g, ' ');
+  if (base.indexOf(' ') >= 0) return base.replace(/\s+/g,' ').trim();
+  // if camelCase, split before capitals
+  if (/[A-Z]/.test(s)){
+    return s.replace(/([a-z])([A-Z])/g, '$1 $2').replace(/\s+/g,' ').trim();
+  }
+  const str = s.toLowerCase();
+
+  const dict = new Set([
+    'le','la','les','de','des','du','et','en','un','une','pour','avec','sans','sur','dans','a','au','aux',
+    'mon','ton','son','fort','boyard','theme','thème','applaudissements','applaudissement','applaudir','applaudis',
+    'oh','rires','rire','laugh','laughs','applause','cheer','cheers','sound','son','sons','audio','music','musique',
+    'intro','outro','bg','background','ambient','ding','beep','click','clicks','clap','claps','oh','hey','yeah',
+    'main','theme','track','track1','track2','voice','voix','sample','demo','test','note','tone'
+  ]);
+
+  // DP segmentation: minimize cost; known word cost = 1, unknown word cost = len^2
+  const n = str.length;
+  const best = Array(n+1).fill(null);
+  best[0] = {cost:0, words:[]};
+  for (let i=0;i<n;i++){
+    if (best[i] === null) continue;
+    for (let j=i+1;j<=n;j++){
+      const w = str.slice(i,j);
+      let cost = 0;
+      if (dict.has(w)) cost = 1;
+      else cost = (w.length)*(w.length);
+      const candCost = best[i].cost + cost;
+      if (best[j] === null || candCost < best[j].cost){
+        best[j] = {cost:candCost, words: best[i].words.concat([w])};
+      }
+    }
+  }
+  let words = null;
+  if (best[n]) words = best[n].words;
+  if (!words){
+    // fallback: split roughly into chunks of 4
+    const out = [];
+    for (let i=0;i<n;i+=4) out.push(str.slice(i,i+4));
+    return out.join(' ');
+  }
+  // Rejoin words but try to merge single-letter fragments with neighbors
+  const merged = [];
+  for (let i=0;i<words.length;i++){
+    const w = words[i];
+    if (w.length === 1 && merged.length>0){
+      merged[merged.length-1] = merged[merged.length-1] + w;
+    } else {
+      merged.push(w);
+    }
+  }
+  // Capitalize first letters optionally
+  return merged.map(x => x).join(' ').replace(/\b([a-z])/g, (m,p)=>p).trim();
 }
 
 // arrange buttons into rows of max 3, set widths/heights per row
