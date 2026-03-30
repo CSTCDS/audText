@@ -182,6 +182,8 @@ async function loadTextList(){
     if (!res.ok) throw new Error('No list');
     textFiles = await res.json();
     if (!Array.isArray(textFiles) || textFiles.length===0){ textFiles = []; textArea.innerHTML = 'Aucun fichier texte.'; return; }
+    // ensure sorted by filename
+    textFiles.sort();
     textIndex = 0;
     await loadText(textIndex);
   }catch(e){
@@ -196,6 +198,12 @@ async function loadText(i){
     const res = await fetch('assets/txt/'+file);
     if (!res.ok) throw new Error('fetch fail');
     const html = await res.text();
+    // set header title from filename
+    const titleEl = document.getElementById('text-title');
+    if (titleEl){
+      const nameNoExt = file.replace(/\.html$/i,'');
+      titleEl.textContent = smartSplit(nameNoExt);
+    }
     textArea.innerHTML = html;
   }catch(e){
     textArea.innerHTML = 'Erreur chargement: '+file;

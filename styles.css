@@ -3,6 +3,7 @@ body{background:#f7f7f8;color:#111}
 main{height:100vh;display:flex;flex-direction:column;max-width:1000px;margin:0 auto}
 header{padding:12px 16px}
 h1{margin:0;font-size:20px}
+#text-title{margin-top:6px;font-size:14px;color:#444}
 #top{flex:1;overflow:auto;padding:16px}
 .text-area{background:#fff;padding:16px;border-radius:8px;border:1px solid #e6e6e6;min-height:150px}
 #buttons-area{padding:16px}

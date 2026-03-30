@@ -31,6 +31,7 @@ $texts = list_files($textDir, '.html');
   <main>
     <header>
       <h1>audioTexte</h1>
+      <div id="text-title" class="text-title"></div>
     </header>
 
     <section id="top">
