@@ -182,8 +182,8 @@ async function loadTextList(){
     if (!res.ok) throw new Error('No list');
     textFiles = await res.json();
     if (!Array.isArray(textFiles) || textFiles.length===0){ textFiles = []; textArea.innerHTML = 'Aucun fichier texte.'; return; }
-    // ensure sorted by filename
-    textFiles.sort();
+    // ensure sorted by filename (numeric-aware)
+    textFiles.sort(numericFilenameCompare);
     textIndex = 0;
     await loadText(textIndex);
   }catch(e){
@@ -327,6 +327,20 @@ function smartSplit(s){
   return merged.map(x => x).join(' ').replace(/\b([a-z])/g, (m,p)=>p).trim();
 }
 
+// Compare filenames numerically when possible (e.g., "2.html" < "10.html")
+function numericFilenameCompare(a,b){
+  // try extract leading integer
+  const na = a.match(/^(\d+)/);
+  const nb = b.match(/^(\d+)/);
+  if (na && nb){
+    const ia = parseInt(na[1],10);
+    const ib = parseInt(nb[1],10);
+    if (ia !== ib) return ia - ib;
+    // if same leading number, fallback to full string compare
+  }
+  return a.localeCompare(b);
+}
+
 // arrange buttons into rows of max 3, set widths/heights per row
 function arrangeButtons(buttons){
   const container = document.querySelector('.buttons-grid');
@@ -389,6 +403,7 @@ async function init(){
   // if server injected TEXT_LIST, use it
   if (Array.isArray(window.TEXT_LIST) && window.TEXT_LIST.length>0){
     textFiles = window.TEXT_LIST.slice();
+    textFiles.sort(numericFilenameCompare);
     textIndex = 0;
     await loadText(textIndex);
   } else {
