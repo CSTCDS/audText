@@ -1,7 +1,7 @@
 {
   "name": "audioTexte",
   "short_name": "audioTexte",
-  "start_url": "./index.html",
+  "start_url": "./index.php",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#ffffff",
