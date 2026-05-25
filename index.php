@@ -29,6 +29,9 @@ $texts = list_files($textDir, '.html');
 </head>
 <body>
   <main>
+    <section id="debug-area">
+      <pre id="debug-pre" class="debug-pre">Recherche dossier sons...</pre>
+    </section>
     <section id="buttons-area">
       <div class="buttons-grid" id="buttons-grid"></div>
     </section>

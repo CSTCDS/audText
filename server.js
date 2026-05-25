@@ -24,7 +24,8 @@ app.get('/api/sounds', (req,res)=>{
   const list = listFiles(soundsDir, '.mp3');
   // update manifest file for compatibility
   try{ fs.writeFileSync(path.join(soundsDir, 'list.json'), JSON.stringify(list,null,2)); }catch(e){}
-  res.json(list);
+  // return full server path plus files for client debug display
+  res.json({ dir: soundsDir, files: list });
 });
 
 app.get('/api/texts', (req,res)=>{

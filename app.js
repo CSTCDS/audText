@@ -246,26 +246,39 @@ let currentButtons = [];
 
 async function loadSoundList(){
   try{
-    // In server mode we must always ask the server for the authoritative list
-    // Try /api/sounds first
-    try{
-      const res = await fetch(soundListUrl, {cache: 'no-store'});
-      if (res.ok){
-        const list = await res.json();
-        if (Array.isArray(list) && list.length>0){
-          soundFiles = list;
-        }
-      }
-    }catch(e){
-      // ignore and fallback
+    // Always request authoritative list from server API. Do NOT use degraded fallback.
+    const res = await fetch(soundListUrl, {cache: 'no-store'});
+    if (!res.ok) {
+      // show error in debug area
+      const dbg = document.getElementById('debug-pre');
+      if (dbg) dbg.textContent = 'Erreur requête /api/sounds: ' + res.status + ' ' + res.statusText;
+      return;
     }
-    // fallback to any server-injected `window.SOUND_LIST` if API gave nothing
-    if ((!Array.isArray(soundFiles) || soundFiles.length===0) && Array.isArray(window.SOUND_LIST) && window.SOUND_LIST.length>0){
-      soundFiles = window.SOUND_LIST.slice();
+    const payload = await res.json();
+    // Expect payload to be {dir: 'full/path', files: [...]}
+    let dir = null;
+    let files = null;
+    if (payload && typeof payload === 'object'){
+      dir = payload.dir || null;
+      files = payload.files || null;
     }
-    if (!Array.isArray(soundFiles) || soundFiles.length===0){ soundFiles = []; console.log('No sounds'); return; }
+    const dbg = document.getElementById('debug-pre');
+    if (dbg){
+      dbg.textContent = 'Dossier recherché sur le serveur:\n' + (dir || '(inconnu)') + '\n\nFichiers trouvés:';
+    }
+    if (!Array.isArray(files) || files.length === 0){
+      if (dbg) dbg.textContent += '\n\nAucun fichier sons trouvés !';
+      // ensure no buttons are created
+      arrangeButtons([]);
+      return;
+    }
+    // show list in debug area
+    if (dbg){ dbg.textContent += '\n' + files.join('\n'); }
+    soundFiles = files.slice();
     buildButtons(soundFiles);
   }catch(e){
+    const dbg = document.getElementById('debug-pre');
+    if (dbg) dbg.textContent = 'Erreur lors récupération liste sons: ' + e;
     console.log('Pas de liste de sons:', e);
   }
 }
