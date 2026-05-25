@@ -11,9 +11,13 @@ const textsDir = path.join(__dirname, 'assets', 'txt');
 
 app.use(express.static(publicDir));
 
-function listFiles(dir, ext){
+function listFiles(dir, exts){
   try{
-    const files = fs.readdirSync(dir).filter(f => f.toLowerCase().endsWith(ext)).sort();
+    const files = fs.readdirSync(dir).filter(f => {
+      const lf = f.toLowerCase();
+      if (Array.isArray(exts)) return exts.some(e => lf.endsWith(e));
+      return lf.endsWith(exts);
+    }).sort();
     return files;
   }catch(e){
     return [];
@@ -21,11 +25,11 @@ function listFiles(dir, ext){
 }
 
 app.get('/api/sounds', (req,res)=>{
-  const list = listFiles(soundsDir, '.mp3');
+  // list both mp3 and wav files
+  const list = listFiles(soundsDir, ['.mp3', '.wav']);
   // update manifest file for compatibility
   try{ fs.writeFileSync(path.join(soundsDir, 'list.json'), JSON.stringify(list,null,2)); }catch(e){}
-  // return full server path plus files for client debug display
-  res.json({ dir: soundsDir, files: list });
+  res.json(list);
 });
 
 app.get('/api/texts', (req,res)=>{
