@@ -29,24 +29,14 @@ $texts = list_files($textDir, '.html');
 </head>
 <body>
   <main>
-    <header>
-      <h1 class="hidden">audioTexte</h1>
-      <div id="text-title" class="text-title hidden"></div>
-    </header>
-
-    <section id="top" class="hidden">
-      <div id="text-area" class="text-area">Chargement du texte...</div>
-    </section>
-
     <section id="buttons-area">
       <div class="buttons-grid" id="buttons-grid"></div>
     </section>
   </main>
 
   <script>
-    // Inject lists from server-side filesystem
+    // Inject sound list from server-side filesystem
     window.SOUND_LIST = <?php echo json_encode($sounds, JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE); ?>;
-    window.TEXT_LIST = <?php echo json_encode($texts, JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE); ?>;
   </script>
   <script src="app.js"></script>
   <script>
