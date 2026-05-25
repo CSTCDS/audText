@@ -17,8 +17,16 @@ self.addEventListener('activate', evt => {
 
 self.addEventListener('fetch', evt => {
   const url = new URL(evt.request.url);
-  if (url.pathname.startsWith('/assets/sounds/')) {
-    evt.respondWith(fetch(evt.request).catch(() => caches.match(evt.request)));
+  // handle sound files under /assets/sound/
+  if (url.pathname.startsWith('/assets/sound/')) {
+    evt.respondWith(
+      fetch(evt.request).then(r => {
+        // put a copy in cache for offline playback
+        const respClone = r.clone();
+        caches.open(CACHE_NAME).then(cache => cache.put(evt.request, respClone));
+        return r;
+      }).catch(() => caches.match(evt.request))
+    );
     return;
   }
   evt.respondWith(caches.match(evt.request).then(r => r || fetch(evt.request)));

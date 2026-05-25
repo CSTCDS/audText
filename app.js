@@ -272,6 +272,18 @@ function buildButtons(list){
     return b;
   });
   arrangeButtons(currentButtons);
+  // Preload all audio files so clicking any button can play immediately
+  try{
+    list.forEach(fname => {
+      try{
+        const ao = getAudio(fname);
+        if (ao && ao.el){
+          ao.el.preload = 'auto';
+          try{ ao.el.load(); }catch(e){}
+        }
+      }catch(e){ }
+    });
+  }catch(e){ }
 }
 
 // Heuristic word segmentation to split concatenated filenames into readable words
