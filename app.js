@@ -246,12 +246,22 @@ let currentButtons = [];
 
 async function loadSoundList(){
   try{
-    if (Array.isArray(window.SOUND_LIST) && window.SOUND_LIST.length>0){
+    // In server mode we must always ask the server for the authoritative list
+    // Try /api/sounds first
+    try{
+      const res = await fetch(soundListUrl, {cache: 'no-store'});
+      if (res.ok){
+        const list = await res.json();
+        if (Array.isArray(list) && list.length>0){
+          soundFiles = list;
+        }
+      }
+    }catch(e){
+      // ignore and fallback
+    }
+    // fallback to any server-injected `window.SOUND_LIST` if API gave nothing
+    if ((!Array.isArray(soundFiles) || soundFiles.length===0) && Array.isArray(window.SOUND_LIST) && window.SOUND_LIST.length>0){
       soundFiles = window.SOUND_LIST.slice();
-    } else {
-      const res = await fetch(soundListUrl);
-      if (!res.ok) throw new Error('No sound list');
-      soundFiles = await res.json();
     }
     if (!Array.isArray(soundFiles) || soundFiles.length===0){ soundFiles = []; console.log('No sounds'); return; }
     buildButtons(soundFiles);
