@@ -175,23 +175,26 @@ const textListUrl = 'assets/txt/list.json';
 let textFiles = [];
 let textIndex = 0;
 const textArea = document.getElementById('text-area');
+const TEXT_UI = !!textArea;
 
 async function loadTextList(){
+  if (!TEXT_UI) return; // text UI removed, skip
   try{
     const res = await fetch(textListUrl);
     if (!res.ok) throw new Error('No list');
     textFiles = await res.json();
-    if (!Array.isArray(textFiles) || textFiles.length===0){ textFiles = []; textArea.innerHTML = 'Aucun fichier texte.'; return; }
+    if (!Array.isArray(textFiles) || textFiles.length===0){ textFiles = []; if (textArea) textArea.innerHTML = 'Aucun fichier texte.'; return; }
     // ensure sorted by filename (numeric-aware)
     textFiles.sort(numericFilenameCompare);
     textIndex = 0;
     await loadText(textIndex);
   }catch(e){
-    textArea.innerHTML = 'Pas de fichiers texte trouvés.';
+    if (textArea) textArea.innerHTML = 'Pas de fichiers texte trouvés.';
   }
 }
 
 async function loadText(i){
+  if (!TEXT_UI) return;
   if (!textFiles || textFiles.length===0) return;
   const file = textFiles[i];
   try{
@@ -204,9 +207,9 @@ async function loadText(i){
       const nameNoExt = file.replace(/\.html$/i,'');
       titleEl.textContent = smartSplit(nameNoExt);
     }
-    textArea.innerHTML = html;
+    if (textArea) textArea.innerHTML = html;
   }catch(e){
-    textArea.innerHTML = 'Erreur chargement: '+file;
+    if (textArea) textArea.innerHTML = 'Erreur chargement: '+file;
   }
 }
 
@@ -215,18 +218,20 @@ function showPrev(){ textIndex = (textIndex-1+textFiles.length)%textFiles.length
 
 // Swipe handling on textArea
 let touchStartX = null;
-textArea.addEventListener('touchstart', (e)=>{ touchStartX = e.changedTouches[0].clientX; });
-textArea.addEventListener('touchend', (e)=>{
-  if (touchStartX === null) return;
-  const dx = e.changedTouches[0].clientX - touchStartX;
-  if (Math.abs(dx) < 50) { touchStartX = null; return; }
-  if (dx < 0) { // swipe left -> previous (spec demandé)
-    showPrev();
-  } else { // swipe right -> next
-    showNext();
-  }
-  touchStartX = null;
-});
+if (textArea){
+  textArea.addEventListener('touchstart', (e)=>{ touchStartX = e.changedTouches[0].clientX; });
+  textArea.addEventListener('touchend', (e)=>{
+    if (touchStartX === null) return;
+    const dx = e.changedTouches[0].clientX - touchStartX;
+    if (Math.abs(dx) < 50) { touchStartX = null; return; }
+    if (dx < 0) { // swipe left -> previous (spec demandé)
+      showPrev();
+    } else { // swipe right -> next
+      showNext();
+    }
+    touchStartX = null;
+  });
+}
 
 // keyboard fallback
 document.addEventListener('keydown', (e)=>{

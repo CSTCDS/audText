@@ -30,13 +30,7 @@ $texts = list_files($textDir, '.html');
 <body>
   <main>
     <header>
-      <h1>audioTexte</h1>
-      <div id="text-title" class="text-title"></div>
     </header>
-
-    <section id="top">
-      <div id="text-area" class="text-area">Chargement du texte...</div>
-    </section>
 
     <section id="buttons-area">
       <div class="buttons-grid" id="buttons-grid"></div>
