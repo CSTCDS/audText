@@ -12,13 +12,20 @@ if ($dir === false || !is_dir($dir)) {
     exit;
 }
 
-$all = scandir($dir);
-$files = array_values(array_filter($all, function($f) use ($dir) {
-    if ($f === '.' || $f === '..') return false;
-    $full = $dir . DIRECTORY_SEPARATOR . $f;
-    if (!is_file($full)) return false;
-    return preg_match('/\.(mp3|wav)$/i', $f);
-}));
+// Recursively collect .mp3 and .wav files
+$files = [];
+$it = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($dir, RecursiveDirectoryIterator::SKIP_DOTS));
+foreach ($it as $fileinfo) {
+    if ($fileinfo->isFile()) {
+        $name = $fileinfo->getFilename();
+        if (preg_match('/\.(mp3|wav)$/i', $name)) {
+            // store relative path from assets/sound
+            $rel = str_replace($dir . DIRECTORY_SEPARATOR, '', $fileinfo->getPathname());
+            $rel = str_replace('\\', '/', $rel);
+            $files[] = $rel;
+        }
+    }
+}
 
 // Natural sort
 natcasesort($files);
