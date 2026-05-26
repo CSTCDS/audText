@@ -299,12 +299,22 @@ function buildButtons(list){
       const dirPath = fullName.includes('/') ? fullName.replace(/\/[^/]+$/, '') : '';
       const newRel = dirPath ? (dirPath + '/' + newName) : newName;
       try{
-        const res = await fetch('/api/sounds/rename.php', {
+        // Try primary endpoint, if it returns non-JSON or 404, fallback to /api/rename.php
+        let res = await fetch('/api/sounds/rename.php', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ old: fullName, new: newRel })
         });
-        const text = await res.text();
+        let text = await res.text();
+        if (res.status === 404 || /<html|<!doctype/i.test(text)){
+          // try fallback
+          res = await fetch('/api/rename.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ old: fullName, new: newRel })
+          });
+          text = await res.text();
+        }
         let j = null;
         try{ j = JSON.parse(text); }catch(e){
           // show raw response to help debugging
