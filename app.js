@@ -304,7 +304,13 @@ function buildButtons(list){
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ old: fullName, new: newRel })
         });
-        const j = await res.json().catch(()=>({success:false,message:'invalid json'}));
+        const text = await res.text();
+        let j = null;
+        try{ j = JSON.parse(text); }catch(e){
+          // show raw response to help debugging
+          alert('Serveur répond invalide JSON:\n' + text);
+          return;
+        }
         if (!res.ok) throw new Error(j.message || 'Erreur serveur');
         if (j.success){
           // update button and data attribute
