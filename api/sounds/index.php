@@ -1,21 +1,27 @@
 <?php
-// API endpoint to list server-side sound files for the app.
-// Returns JSON: { dir: "/full/path/to/assets/sound", files: ["a.mp3","b.mp3"] }
+// api/sounds/index.php
+// Returns JSON array of .mp3 and .wav filenames from ../../assets/sound
+header('Content-Type: application/json; charset=utf-8');
+// If needed, enable CORS for cross-origin requests (remove or restrict in production)
+header('Access-Control-Allow-Origin: *');
 
-header('Content-Type: application/json');
-
-$soundDir = realpath(__DIR__ . '/../../assets/sound');
-$files = [];
-if ($soundDir && is_dir($soundDir)){
-  $items = scandir($soundDir);
-  foreach($items as $it){
-    if ($it === '.' || $it === '..') continue;
-    $full = $soundDir . DIRECTORY_SEPARATOR . $it;
-    if (is_file($full) && strtolower(pathinfo($it, PATHINFO_EXTENSION)) === 'mp3'){
-      $files[] = $it;
-    }
-  }
-  sort($files);
+$dir = realpath(__DIR__ . '/../../assets/sound');
+if ($dir === false || !is_dir($dir)) {
+    http_response_code(404);
+    echo json_encode([]);
+    exit;
 }
 
-echo json_encode(['dir' => $soundDir ?: '', 'files' => $files], JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE);
+$all = scandir($dir);
+$files = array_values(array_filter($all, function($f) use ($dir) {
+    if ($f === '.' || $f === '..') return false;
+    $full = $dir . DIRECTORY_SEPARATOR . $f;
+    if (!is_file($full)) return false;
+    return preg_match('/\.(mp3|wav)$/i', $f);
+}));
+
+// Natural sort
+natcasesort($files);
+$files = array_values($files);
+
+echo json_encode($files);
