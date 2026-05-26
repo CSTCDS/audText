@@ -291,26 +291,30 @@ function buildButtons(list){
     // right-click to rename
     b.addEventListener('contextmenu', async (ev) => {
       ev.preventDefault();
-      const current = filename;
-      const newName = prompt('Nouveau nom (avec extension):', current);
-      if (!newName || newName === current) return;
+      const fullName = name; // may include path
+      const currentBasename = filename;
+      const newName = prompt('Nouveau nom (avec extension):', currentBasename);
+      if (!newName || newName === currentBasename) return;
+      // preserve path if present
+      const dirPath = fullName.includes('/') ? fullName.replace(/\/[^/]+$/, '') : '';
+      const newRel = dirPath ? (dirPath + '/' + newName) : newName;
       try{
         const res = await fetch('/api/sounds/rename.php', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ old: current, new: newName })
+          body: JSON.stringify({ old: fullName, new: newRel })
         });
-        if (!res.ok) throw new Error('Erreur serveur');
-        const j = await res.json();
+        const j = await res.json().catch(()=>({success:false,message:'invalid json'}));
+        if (!res.ok) throw new Error(j.message || 'Erreur serveur');
         if (j.success){
           // update button and data attribute
-          b.setAttribute('data-sound', name.replace(/[^/]*$/, newName));
+          b.setAttribute('data-sound', newRel);
           b.textContent = newName;
-          // update cached audio mapping
-          if (audioCache.has(current)){
-            const v = audioCache.get(current);
-            audioCache.delete(current);
-            audioCache.set(newName, v);
+          // update cached audio mapping (keyed by fullName)
+          if (audioCache.has(fullName)){
+            const v = audioCache.get(fullName);
+            audioCache.delete(fullName);
+            audioCache.set(newRel, v);
           }
           alert('Fichier renommé en ' + newName);
         } else {

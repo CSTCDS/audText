@@ -18,21 +18,43 @@ if ($dir === false || !is_dir($dir)){
     exit;
 }
 
-$old = basename($input['old']);
-$new = basename($input['new']);
-// validate extension
-if (!preg_match('/\.(mp3|wav)$/i', $new)){
+// Accept relative paths but sanitize them
+$oldRel = str_replace('\\','/',$input['old']);
+$newRel = str_replace('\\','/',$input['new']);
+$oldRel = ltrim($oldRel, '/');
+$newRel = ltrim($newRel, '/');
+if (strpos($oldRel, '..') !== false || strpos($newRel, '..') !== false){
+    http_response_code(400);
+    echo json_encode(['success'=>false,'message'=>'invalid path']);
+    exit;
+}
+
+$oldDir = dirname($oldRel);
+if ($oldDir === '.') $oldDir = '';
+$newDir = dirname($newRel);
+if ($newDir === '.') $newDir = '';
+// don't allow moving files across directories via this endpoint
+if ($oldDir !== $newDir){
+    http_response_code(400);
+    echo json_encode(['success'=>false,'message'=>'renaming across directories not allowed']);
+    exit;
+}
+
+$oldBase = basename($oldRel);
+$newBase = basename($newRel);
+// validate extension on new name
+if (!preg_match('/\.(mp3|wav)$/i', $newBase)){
     http_response_code(400);
     echo json_encode(['success'=>false,'message'=>'invalid extension']);
     exit;
 }
 
-$oldPath = $dir . DIRECTORY_SEPARATOR . $old;
-$newPath = $dir . DIRECTORY_SEPARATOR . $new;
+$oldPath = $dir . DIRECTORY_SEPARATOR . ($oldDir ? str_replace('/','\\', $oldDir) . DIRECTORY_SEPARATOR : '') . $oldBase;
+$newPath = $dir . DIRECTORY_SEPARATOR . ($newDir ? str_replace('/','\\', $newDir) . DIRECTORY_SEPARATOR : '') . $newBase;
 
 if (!file_exists($oldPath)){
     http_response_code(404);
-    echo json_encode(['success'=>false,'message'=>'old file not found']);
+    echo json_encode(['success'=>false,'message'=>'old file not found','path'=>$oldPath]);
     exit;
 }
 if (file_exists($newPath)){
@@ -41,10 +63,12 @@ if (file_exists($newPath)){
     exit;
 }
 
-$ok = rename($oldPath, $newPath);
+$ok = @rename($oldPath, $newPath);
 if (!$ok){
+    $err = error_get_last();
+    $msg = $err && isset($err['message']) ? $err['message'] : 'rename failed';
     http_response_code(500);
-    echo json_encode(['success'=>false,'message'=>'rename failed']);
+    echo json_encode(['success'=>false,'message'=>$msg]);
     exit;
 }
 
