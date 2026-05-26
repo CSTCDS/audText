@@ -4,72 +4,53 @@ const btnMap = new Map();
 let audioCtx = null;
 
 function ensureAudioContext(){
-  btnMap.clear();
-  currentButtons = list.map(name => {
-    const b = document.createElement('button');
-    b.className = 'sound-btn';
-    b.setAttribute('data-sound', name);
-    // label should be the full filename (keep extension), without any path
-    const parts = name.split('/');
-    const filename = parts[parts.length - 1];
-    const label = filename;
-    b.textContent = label;
-    // store mapping name -> button
-    btnMap.set(name, b);
-    // right-click to rename
-    b.addEventListener('contextmenu', async (ev) => {
-      ev.preventDefault();
-      const fullName = name; // may include path
-      const currentBasename = filename;
-      const newName = prompt('Nouveau nom (avec extension):', currentBasename);
-      if (!newName || newName === currentBasename) return;
-      // preserve path if present
-      const dirPath = fullName.includes('/') ? fullName.replace(/\\[^/]+$/, '') : '';
-      const newRel = dirPath ? (dirPath + '/' + newName) : newName;
-      try{
-        let res = await fetch('api/sounds/rename.php', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ old: fullName, new: newRel })
-        });
-        let text = await res.text();
-        if (res.status === 404 || /<html|<!doctype/i.test(text)){
-          res = await fetch('api/rename.php', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ old: fullName, new: newRel })
-          });
-          text = await res.text();
-        }
-        let j = null;
-        try{ j = JSON.parse(text); }catch(e){ alert('Serveur répond invalide JSON:\n' + text); return; }
-        if (!res.ok) throw new Error(j.message || 'Erreur serveur');
-        if (j.success){
-          // update button and data attribute
-          b.setAttribute('data-sound', newRel);
-          b.textContent = newName;
-          // update cached audio mapping (keyed by fullName)
-          if (audioCache.has(fullName)){
-            const v = audioCache.get(fullName);
-            audioCache.delete(fullName);
-            audioCache.set(newRel, v);
-          }
-          // update btnMap key
-          if (btnMap.has(fullName)){
-            btnMap.delete(fullName);
-            btnMap.set(newRel, b);
-          }
-          alert('Fichier renommé en ' + newName);
-          try{ location.reload(); }catch(e){}
-        } else {
-          alert('Erreur: ' + (j.message || 'unknown'));
-        }
-      }catch(err){
-        alert('Erreur: ' + err.message);
-      }
-    });
-    return b;
-  });
+  if (!audioCtx){
+    try{ audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }catch(e){ audioCtx = null; }
+  }
+}
+
+function getAudio(filename){
+  // returns an object {el, gain, srcNode}
+  if (audioCache.has(filename)) return audioCache.get(filename);
+  const el = new Audio(soundPath + filename);
+  el.preload = 'auto';
+  let obj = { el, gain: null, src: null };
+  // create AudioContext lazily on first user gesture
+  try{
+    ensureAudioContext();
+    if (audioCtx){
+      // Create a MediaElementSource and GainNode when audio context is available
+      const src = audioCtx.createMediaElementSource(el);
+      const gain = audioCtx.createGain();
+      gain.gain.value = 1;
+      src.connect(gain);
+      gain.connect(audioCtx.destination);
+      obj.gain = gain;
+      obj.src = src;
+    }
+  }catch(e){
+    // ignore; fallback to element-only playback
+  }
+  audioCache.set(filename, obj);
+  return obj;
+}
+
+function toggleAudioForButton(btn){
+  const file = btn.getAttribute('data-sound');
+  const audio = getAudio(file);
+  if (!audio) return;
+  if (!audio.paused){
+    audio.pause();
+    audio.currentTime = 0;
+    btn.classList.remove('playing');
+  } else {
+    audio.currentTime = 0;
+    audio.play().then(()=>{
+      btn.classList.add('playing');
+    }).catch(err => console.log('Play failed:', err));
+    audio.onended = () => btn.classList.remove('playing');
+  }
+}
 
 // Click/dblclick behavior:
 // - click on stopped button -> start playback immediately
