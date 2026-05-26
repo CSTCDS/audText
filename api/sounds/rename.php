@@ -96,5 +96,5 @@ try{
 
 // Flush any buffered output and return clean JSON
 if (ob_get_length()) ob_clean();
-echo json_encode(['success'=>true,'new'=>$new]);
+echo json_encode(['success'=>true,'new'=>$newBase]);
 if (ob_get_level()) ob_end_flush();
