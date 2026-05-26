@@ -270,6 +270,8 @@ async function loadSoundList(){
       }
     }
     if (!Array.isArray(soundFiles) || soundFiles.length===0){ soundFiles = []; console.log('No sounds'); return; }
+    // sort filenames (case-insensitive, numeric-aware)
+    soundFiles.sort((a,b)=> a.localeCompare(b, undefined, {numeric:true, sensitivity:'base'}));
     buildButtons(soundFiles);
   }catch(e){
     console.log('Pas de liste de sons:', e);
@@ -286,13 +288,48 @@ function buildButtons(list){
     const filename = parts[parts.length - 1];
     const label = filename;
     b.textContent = label;
+    // right-click to rename
+    b.addEventListener('contextmenu', async (ev) => {
+      ev.preventDefault();
+      const current = filename;
+      const newName = prompt('Nouveau nom (avec extension):', current);
+      if (!newName || newName === current) return;
+      try{
+        const res = await fetch('/api/sounds/rename.php', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ old: current, new: newName })
+        });
+        if (!res.ok) throw new Error('Erreur serveur');
+        const j = await res.json();
+        if (j.success){
+          // update button and data attribute
+          b.setAttribute('data-sound', name.replace(/[^/]*$/, newName));
+          b.textContent = newName;
+          // update cached audio mapping
+          if (audioCache.has(current)){
+            const v = audioCache.get(current);
+            audioCache.delete(current);
+            audioCache.set(newName, v);
+          }
+          alert('Fichier renommé en ' + newName);
+        } else {
+          alert('Erreur: ' + (j.message || 'unknown'));
+        }
+      }catch(err){
+        alert('Erreur: ' + err.message);
+      }
+    });
     return b;
   });
   arrangeButtons(currentButtons);
-  // Preload all audio files so clicking any button can play immediately
+  // Preload audio files (skip those starting with xx or XX)
   try{
     list.forEach(fname => {
       try{
+        const parts = fname.split('/');
+        const basename = parts[parts.length - 1];
+        if (/^xx/i.test(basename)) return; // skip files starting with xx
         const ao = getAudio(fname);
         if (ao && ao.el){
           ao.el.preload = 'auto';
@@ -382,14 +419,16 @@ function arrangeButtons(buttons){
   // clear container
   container.innerHTML = '';
   if (!buttons || buttons.length===0) return;
+  // compute number of columns (4 when wide screens, else 3)
+  const COLS = (window.innerWidth > 1200) ? 4 : 3;
   // compute number of rows
-  const numRows = Math.ceil(buttons.length / 3);
+  const numRows = Math.ceil(buttons.length / COLS);
   // prepare empty rows (top-to-bottom)
   const rows = new Array(numRows).fill(0).map(()=>[]);
   // fill rows starting from bottom to top
   let idx = 0;
   for (let r = numRows - 1; r >= 0; r--) {
-    for (let c = 0; c < 3 && idx < buttons.length; c++){
+    for (let c = 0; c < COLS && idx < buttons.length; c++){
       rows[r].push(buttons[idx++]);
     }
   }
