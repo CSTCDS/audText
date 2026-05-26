@@ -9,7 +9,6 @@ const publicDir = path.join(__dirname);
 const soundsDir = path.join(__dirname, 'assets', 'sound');
 const textsDir = path.join(__dirname, 'assets', 'txt');
 
-app.use(express.static(publicDir));
 
 function listFiles(dir, exts){
   try{
@@ -37,5 +36,8 @@ app.get('/api/texts', (req,res)=>{
   try{ fs.writeFileSync(path.join(textsDir, 'list.json'), JSON.stringify(list,null,2)); }catch(e){}
   res.json(list);
 });
+
+// Serve static files after API routes so API paths are not shadowed by folders
+app.use(express.static(publicDir));
 
 app.listen(PORT, ()=> console.log(`Dev server listening on http://localhost:${PORT}`));

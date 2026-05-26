@@ -246,39 +246,32 @@ let currentButtons = [];
 
 async function loadSoundList(){
   try{
-    // Always request authoritative list from server API. Do NOT use degraded fallback.
-    const res = await fetch(soundListUrl, {cache: 'no-store'});
-    if (!res.ok) {
-      // show error in debug area
-      const dbg = document.getElementById('debug-pre');
-      if (dbg) dbg.textContent = 'Erreur requête /api/sounds: ' + res.status + ' ' + res.statusText;
-      return;
+    if (Array.isArray(window.SOUND_LIST) && window.SOUND_LIST.length>0){
+      soundFiles = window.SOUND_LIST.slice();
+    } else {
+      // try API first (for node backend), fallback to static JSON for PHP hosting
+      try{
+        const res = await fetch(soundListUrl);
+        if (res.ok) {
+          soundFiles = await res.json();
+        } else {
+          throw new Error('API unavailable');
+        }
+      }catch(e){
+        // fallback to static list bundled with the app
+        try{
+          const res2 = await fetch(soundPath + 'list.json');
+          if (res2.ok) soundFiles = await res2.json();
+          else throw new Error('No static list');
+        }catch(e2){
+          console.log('Fallback failed:', e2);
+          soundFiles = [];
+        }
+      }
     }
-    const payload = await res.json();
-    // Expect payload to be {dir: 'full/path', files: [...]}
-    let dir = null;
-    let files = null;
-    if (payload && typeof payload === 'object'){
-      dir = payload.dir || null;
-      files = payload.files || null;
-    }
-    const dbg = document.getElementById('debug-pre');
-    if (dbg){
-      dbg.textContent = 'Dossier recherché sur le serveur:\n' + (dir || '(inconnu)') + '\n\nFichiers trouvés:';
-    }
-    if (!Array.isArray(files) || files.length === 0){
-      if (dbg) dbg.textContent += '\n\nAucun fichier sons trouvés !';
-      // ensure no buttons are created
-      arrangeButtons([]);
-      return;
-    }
-    // show list in debug area
-    if (dbg){ dbg.textContent += '\n' + files.join('\n'); }
-    soundFiles = files.slice();
+    if (!Array.isArray(soundFiles) || soundFiles.length===0){ soundFiles = []; console.log('No sounds'); return; }
     buildButtons(soundFiles);
   }catch(e){
-    const dbg = document.getElementById('debug-pre');
-    if (dbg) dbg.textContent = 'Erreur lors récupération liste sons: ' + e;
     console.log('Pas de liste de sons:', e);
   }
 }
