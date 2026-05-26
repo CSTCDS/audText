@@ -299,8 +299,16 @@ function buildButtons(list){
     // label should be the full filename (keep extension), without any path
     const parts = name.split('/');
     const filename = parts[parts.length - 1];
-    const label = filename;
-    b.textContent = label;
+    // make label breakable: prefer break before extension, then after underscores
+    const escapeHtml = s => s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+    const makeBreakable = s => {
+      // insert a break opportunity before the last dot (extension)
+      const withExt = s.replace(/\.([^.]*)$/,'<wbr>.$1');
+      // allow breaks after underscores
+      return withExt.replace(/_/g, '_<wbr>');
+    };
+    const labelHtml = makeBreakable(escapeHtml(filename));
+    b.innerHTML = labelHtml;
     // right-click to rename
     b.addEventListener('contextmenu', async (ev) => {
       ev.preventDefault();

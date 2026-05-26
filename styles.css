@@ -12,6 +12,7 @@ h1{margin:0;font-size:20px}
 .buttons-grid{display:flex;flex-direction:column;gap:12px;align-items:center}
 .btn-row{display:flex;gap:12px;justify-content:center;width:100%;}
 .sound-btn{padding:12px;font-size:16px;border-radius:12px;border:1px solid #ddd;background:#fff;display:flex;align-items:center;justify-content:center;text-align:center;box-sizing:border-box}
+.sound-btn{white-space:normal;overflow-wrap:anywhere;word-break:break-word}
 .sound-btn.playing{background:#e8f5e9;border-color:#4caf50}
 .note{font-size:13px;color:#666;margin-top:8px;text-align:center}
 
