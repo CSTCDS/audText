@@ -160,8 +160,8 @@ document.addEventListener('click', (e) => {
     }).catch(err => console.log('Play failed:', err));
     audioEl.onended = () => btn.classList.remove('playing');
   } else {
-    // single click on a playing sound -> stop abruptly
-    stopImmediately(audioObj, btn);
+    // single click on a playing sound -> fade out over 4s
+    fadeOutAndStop(audioObj, btn, 4000);
   }
 });
 
@@ -171,8 +171,8 @@ document.addEventListener('dblclick', (e) => {
   const file = btn.getAttribute('data-sound');
   const audio = getAudio(file);
   if (!audio) return;
-  // double-click -> fade out over 4s
-  fadeOutAndStop(audio, btn, 4000);
+  // double-click -> stop immediately
+  stopImmediately(audio, btn);
 });
 
 // Warm-up audio on first user gesture to satisfy autoplay restrictions
