@@ -333,6 +333,8 @@ function buildButtons(list){
             audioCache.set(newRel, v);
           }
           alert('Fichier renommé en ' + newName);
+          // reload page after user dismisses the alert
+          try{ location.reload(); }catch(e){}
         } else {
           alert('Erreur: ' + (j.message || 'unknown'));
         }
@@ -445,9 +447,9 @@ function arrangeButtons(buttons){
   const numRows = Math.ceil(buttons.length / COLS);
   // prepare empty rows (top-to-bottom)
   const rows = new Array(numRows).fill(0).map(()=>[]);
-  // fill rows starting from bottom to top
+  // fill rows starting from top to bottom (first items appear at the top)
   let idx = 0;
-  for (let r = numRows - 1; r >= 0; r--) {
+  for (let r = 0; r < numRows; r++) {
     for (let c = 0; c < COLS && idx < buttons.length; c++){
       rows[r].push(buttons[idx++]);
     }
