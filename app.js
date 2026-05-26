@@ -281,9 +281,10 @@ function buildButtons(list){
     const b = document.createElement('button');
     b.className = 'sound-btn';
     b.setAttribute('data-sound', name);
-    // use a cleaned label from filename
-    const nameNoExt = name.replace(/\.mp3$/i, '');
-    const label = smartSplit(nameNoExt);
+    // label should be the full filename (keep extension), without any path
+    const parts = name.split('/');
+    const filename = parts[parts.length - 1];
+    const label = filename;
     b.textContent = label;
     return b;
   });
